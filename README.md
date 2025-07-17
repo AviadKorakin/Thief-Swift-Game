@@ -54,11 +54,111 @@ flowchart TD
 
 ## 🧠 Algorithm & Multithreading
 
-### Maze Generation
+## 🏗️ Maze Generation Algorithms: Recursive Division & Randomized Depth-First Search
 
-- Uses **recursive division** and **randomized depth-first search** to carve paths.
-- Coins are placed randomly on open cells.
-- The thief always starts at (1,1).
+Your maze generator uses two classic algorithms to create interesting, solvable mazes:
+
+### 1. Recursive Division
+
+**Recursive division** is a method for generating mazes by repeatedly splitting the grid into smaller sections with walls, then adding openings (doors) to connect them. This creates a maze with long corridors and a “room-like” feel.
+
+#### **How It Works (in your code):**
+
+- The function `carveByDivision` is called with the current bounds of a subgrid.
+- If the area is too small, it stops (base case).
+- Otherwise, it randomly chooses to divide horizontally or vertically:
+  - **Horizontal division:** Adds a horizontal wall across the subgrid, except for two random “holes” (doors).
+  - **Vertical division:** Adds a vertical wall, again with two random holes.
+- It then recursively calls itself on the new subgrids above/below or left/right of the wall.
+- This process continues, subdividing until all regions are too small to divide further.
+
+#### **Pseudocode Example:**
+
+```plaintext
+function divide(minX, minY, maxX, maxY):
+    if width or height too small: return
+    if horizontal:
+        pick a random y for the wall
+        add wall across (minX..maxX) at y
+        add two random holes in the wall
+        divide above and below the wall
+    else:
+        pick a random x for the wall
+        add wall down (minY..maxY) at x
+        add two random holes in the wall
+        divide left and right of the wall
+```
+
+#### **Mermaid Diagram: Recursive Division**
+
+```mermaid
+flowchart TD
+    Start[Start with full grid]
+    A[Divide with wall (horizontal/vertical)]
+    B[Add random holes in wall]
+    C[Recurse on each subgrid]
+    D[Base case: too small to divide]
+
+    Start --> A --> B --> C
+    C -->|If subgrid big| A
+    C -->|If subgrid small| D
+```
+
+#### **In Your Code:**
+
+- See `Maze.carveByDivision(minX:minY:maxX:maxY:grid:)`
+- This is why your mazes have long, straight corridors and “rooms.”
+
+---
+
+### 2. Randomized Depth-First Search (DFS)
+
+**Randomized DFS** is another maze generation technique, often called the “recursive backtracker.” It creates mazes with lots of twists and turns and a single unique path between any two points.
+
+#### **How It Works (in your code):**
+
+- Start at a random cell, mark it as visited.
+- Randomly pick a direction (up, down, left, right).
+- If the neighbor in that direction hasn’t been visited and isn’t a wall, carve a path to it and recursively continue from there.
+- If all neighbors are visited or blocked, backtrack to the previous cell and try a new direction.
+- Continue until all cells are visited.
+
+#### **Pseudocode Example:**
+
+```plaintext
+function dfs(x, y):
+    mark (x, y) as visited
+    for each direction in random order:
+        nx, ny = neighbor in that direction
+        if (nx, ny) is in bounds and not visited:
+            remove wall between (x, y) and (nx, ny)
+            dfs(nx, ny)
+```
+
+#### **In Your Code:**
+
+- See `Maze.carve(fromX:y:w:h:grid:visited:)`
+- This is used for initial path carving before recursive division, ensuring all areas are reachable.
+
+---
+
+### **How These Work Together in Your Game**
+
+- The maze starts as all walls.
+- The inner area is cleared to paths.
+- **Recursive division** is used to add structure and long corridors.
+- **Randomized DFS** is used to ensure connectivity and add complexity.
+- Coins and the thief are placed after the maze is carved.
+
+---
+
+### **Why Use Both?**
+
+- **Recursive division** gives the maze a “roomy” feel with long corridors.
+- **Randomized DFS** ensures there are no isolated sections and every part of the maze is reachable.
+- The combination creates mazes that are both interesting to navigate and always solvable.
+
+---
 
 ### Pathfinding
 
@@ -239,84 +339,96 @@ Below is the actual implementation of the A\* algorithm from `Maze.swift` in thi
 ```swift
 /// A* pathfinding with Manhattan heuristic.
 static func astarPath(
-      in grid: [[MazeCell]],
-      from start: Position,
-      to target: Position,
-      gridVersion: Int,
-      maxRange: Int? = nil,
-      useCache: Bool = false
-    ) -> [Position]? {
-    // 1) Early exit if target is out of range (for police detection)
-    let dx = abs(start.x - target.x)
-    let dy = abs(start.y - target.y)
-    if let limit = maxRange, dx + dy > limit {
-        return nil
-    }
+   in grid: [[MazeCell]],           // The maze grid
+   from start: Position,            // Starting position
+   to target: Position,             // Target position
+   gridVersion: Int,                // Used for cache invalidation
+   maxRange: Int? = nil,            // Optional: max allowed path length (for police)
+   useCache: Bool = false           // Use cached paths if available
+) -> [Position]? {
+   // 1) Early exit: if the straight-line (Manhattan) distance is greater than allowed, bail out
+   let dx = abs(start.x - target.x)
+   let dy = abs(start.y - target.y)
+   if let limit = maxRange, dx + dy > limit {
+       return nil
+   }
 
-    // 2) Use cached path if available
-    let key = "\(start.x),\(start.y)->\(target.x),\(target.y)@\(gridVersion)"
-    if useCache, let cached = pathCache[key] {
-        return cached
-    }
+   // 2) Check if we already have a cached path for this query
+   let key = "\(start.x),\(start.y)->\(target.x),\(target.y)@\(gridVersion)"
+   if useCache, let cached = pathCache[key] {
+       return cached
+   }
 
-    let rows = grid.count, cols = grid.first?.count ?? 0
-    if start == target { return [start] }
-    if dx + dy == 1 { return [start, target] }
+   let rows = grid.count
+   let cols = grid.first?.count ?? 0
+   // If start and target are the same, return immediately
+   if start == target { return [start] }
+   // If they're adjacent, return the direct path
+   if dx + dy == 1 { return [start, target] }
 
-    // 3) Setup node data structures
-    struct FastNode { var g, f, parent: Int }
-    let total = rows * cols
-    var nodes = [FastNode](repeating: FastNode(g: .max, f: .max, parent: -1), count: total)
-    var openHeap = MinHeap<Int> { nodes[$0].f < nodes[$1].f }
+   // 3) Setup: Each cell is a node, tracked by a FastNode struct
+   struct FastNode { var g, f, parent: Int }
+   let total = rows * cols
+   // Initialize all nodes with max cost and no parent
+   var nodes = [FastNode](repeating: FastNode(g: .max, f: .max, parent: -1), count: total)
+   // MinHeap to always pick the node with the lowest f (g + h)
+   var openHeap = MinHeap<Int> { nodes[$0].f < nodes[$1].f }
 
-    func idx(_ x: Int, _ y: Int) -> Int { y * cols + x }
+   // Helper to convert (x, y) to a flat array index
+   func idx(_ x: Int, _ y: Int) -> Int { y * cols + x }
 
-    let startIdx = idx(start.x, start.y)
-    nodes[startIdx] = FastNode(g: 0, f: dx + dy, parent: -1)
-    openHeap.insert(startIdx)
+   // Start node: cost 0, heuristic is Manhattan distance
+   let startIdx = idx(start.x, start.y)
+   nodes[startIdx] = FastNode(g: 0, f: dx + dy, parent: -1)
+   openHeap.insert(startIdx)
 
-    let dirs = [(1,0),(-1,0),(0,1),(0,-1)]
-    while let current = openHeap.remove() {
-        if current == idx(target.x, target.y) { break }
-        let cx = current % cols, cy = current / cols
+   // Directions: right, left, down, up
+   let dirs = [(1,0),(-1,0),(0,1),(0,-1)]
+   // Main loop: keep exploring until we reach the target or run out of options
+   while let current = openHeap.remove() {
+       // If we've reached the target, stop
+       if current == idx(target.x, target.y) { break }
+       let cx = current % cols, cy = current / cols
 
-        for (ddx, ddy) in dirs {
-            let nx = cx + ddx, ny = cy + ddy
-            guard nx >= 0, nx < cols,
-                  ny >= 0, ny < rows,
-                  grid[ny][nx] != .wall else { continue }
+       // Check all four neighbors
+       for (ddx, ddy) in dirs {
+           let nx = cx + ddx, ny = cy + ddy
+           // Skip out-of-bounds or wall cells
+           guard nx >= 0, nx < cols, ny >= 0, ny < rows, grid[ny][nx] != .wall else { continue }
 
-            let neighbour = idx(nx, ny)
-            let tentativeG = nodes[current].g + 1
+           let neighbour = idx(nx, ny)
+           let tentativeG = nodes[current].g + 1 // Cost to reach this neighbor
 
-            // Manhattan heuristic
-            let h = abs(nx - target.x) + abs(ny - target.y)
-            if let limit = maxRange, tentativeG + h > limit {
-                continue
-            }
+           // Manhattan heuristic: how far to goal from here
+           let h = abs(nx - target.x) + abs(ny - target.y)
+           // If this path would exceed maxRange, skip
+           if let limit = maxRange, tentativeG + h > limit { continue }
 
-            if tentativeG < nodes[neighbour].g {
-                nodes[neighbour].g = tentativeG
-                nodes[neighbour].f = tentativeG + h
-                nodes[neighbour].parent = current
-                openHeap.insert(neighbour)
-            }
-        }
-    }
+           // If this is a better path to this neighbor, record it
+           if tentativeG < nodes[neighbour].g {
+               nodes[neighbour].g = tentativeG
+               nodes[neighbour].f = tentativeG + h
+               nodes[neighbour].parent = current
+               openHeap.insert(neighbour)
+           }
+       }
+   }
 
-    // 4) Reconstruct path
-    var path = [Position]()
-    var cur = idx(target.x, target.y)
-    if nodes[cur].parent == -1 { return nil }
-    while cur != -1 {
-        let x = cur % cols, y = cur / cols
-        path.append(Position(x: x, y: y))
-        cur = nodes[cur].parent
-    }
-    path.reverse()
+   // 4) Reconstruct the path by following parent pointers from target to start
+   var path = [Position]()
+   var cur = idx(target.x, target.y)
+   // If the target was never reached, return nil
+   if nodes[cur].parent == -1 { return nil }
+   while cur != -1 {
+       let x = cur % cols, y = cur / cols
+       path.append(Position(x: x, y: y))
+       cur = nodes[cur].parent
+   }
+   path.reverse() // Path is built backwards, so reverse it
 
-    if useCache { pathCache[key] = path }
-    return path
+   // Cache the result for future queries
+   if useCache { pathCache[key] = path }
+   return path
 }
 ```
 
@@ -328,112 +440,6 @@ static func astarPath(
 - **Path Reconstruction:** Once the goal is reached, the path is reconstructed by following parent pointers, yielding the shortest path.
 - **Caching:** Paths are cached for repeated queries, improving performance for both the player and police.
 - **Range Limiting:** The `maxRange` parameter allows the same function to be used for both unlimited (player) and limited (police detection) pathfinding.
-
-#### In summary, your code is a textbook example of A\* with Manhattan distance, adapted for a grid-based maze game. The implementation is efficient, clear, and leverages Swift's strengths for both performance and readability.
-
----
-
-## 📝 Fully Commented Implementation
-
-Below is the same `astarPath` function, but with detailed comments explaining every step and decision:
-
-```swift
-/// A* pathfinding with Manhattan heuristic.
-static func astarPath(
-    in grid: [[MazeCell]],           // The maze grid
-    from start: Position,            // Starting position
-    to target: Position,             // Target position
-    gridVersion: Int,                // Used for cache invalidation
-    maxRange: Int? = nil,            // Optional: max allowed path length (for police)
-    useCache: Bool = false           // Use cached paths if available
-) -> [Position]? {
-    // 1) Early exit: if the straight-line (Manhattan) distance is greater than allowed, bail out
-    let dx = abs(start.x - target.x)
-    let dy = abs(start.y - target.y)
-    if let limit = maxRange, dx + dy > limit {
-        return nil
-    }
-
-    // 2) Check if we already have a cached path for this query
-    let key = "\(start.x),\(start.y)->\(target.x),\(target.y)@\(gridVersion)"
-    if useCache, let cached = pathCache[key] {
-        return cached
-    }
-
-    let rows = grid.count
-    let cols = grid.first?.count ?? 0
-    // If start and target are the same, return immediately
-    if start == target { return [start] }
-    // If they're adjacent, return the direct path
-    if dx + dy == 1 { return [start, target] }
-
-    // 3) Setup: Each cell is a node, tracked by a FastNode struct
-    struct FastNode { var g, f, parent: Int }
-    let total = rows * cols
-    // Initialize all nodes with max cost and no parent
-    var nodes = [FastNode](repeating: FastNode(g: .max, f: .max, parent: -1), count: total)
-    // MinHeap to always pick the node with the lowest f (g + h)
-    var openHeap = MinHeap<Int> { nodes[$0].f < nodes[$1].f }
-
-    // Helper to convert (x, y) to a flat array index
-    func idx(_ x: Int, _ y: Int) -> Int { y * cols + x }
-
-    // Start node: cost 0, heuristic is Manhattan distance
-    let startIdx = idx(start.x, start.y)
-    nodes[startIdx] = FastNode(g: 0, f: dx + dy, parent: -1)
-    openHeap.insert(startIdx)
-
-    // Directions: right, left, down, up
-    let dirs = [(1,0),(-1,0),(0,1),(0,-1)]
-    // Main loop: keep exploring until we reach the target or run out of options
-    while let current = openHeap.remove() {
-        // If we've reached the target, stop
-        if current == idx(target.x, target.y) { break }
-        let cx = current % cols, cy = current / cols
-
-        // Check all four neighbors
-        for (ddx, ddy) in dirs {
-            let nx = cx + ddx, ny = cy + ddy
-            // Skip out-of-bounds or wall cells
-            guard nx >= 0, nx < cols, ny >= 0, ny < rows, grid[ny][nx] != .wall else { continue }
-
-            let neighbour = idx(nx, ny)
-            let tentativeG = nodes[current].g + 1 // Cost to reach this neighbor
-
-            // Manhattan heuristic: how far to goal from here
-            let h = abs(nx - target.x) + abs(ny - target.y)
-            // If this path would exceed maxRange, skip
-            if let limit = maxRange, tentativeG + h > limit { continue }
-
-            // If this is a better path to this neighbor, record it
-            if tentativeG < nodes[neighbour].g {
-                nodes[neighbour].g = tentativeG
-                nodes[neighbour].f = tentativeG + h
-                nodes[neighbour].parent = current
-                openHeap.insert(neighbour)
-            }
-        }
-    }
-
-    // 4) Reconstruct the path by following parent pointers from target to start
-    var path = [Position]()
-    var cur = idx(target.x, target.y)
-    // If the target was never reached, return nil
-    if nodes[cur].parent == -1 { return nil }
-    while cur != -1 {
-        let x = cur % cols, y = cur / cols
-        path.append(Position(x: x, y: y))
-        cur = nodes[cur].parent
-    }
-    path.reverse() // Path is built backwards, so reverse it
-
-    // Cache the result for future queries
-    if useCache { pathCache[key] = path }
-    return path
-}
-```
-
-This version should make every part of the algorithm crystal clear for readers, showing how your code brings the A\* algorithm and Manhattan heuristic to life in a real Swift project.
 
 ---
 
