@@ -1,0 +1,67 @@
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+build/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Obj‑C / Swift specific
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+*~.nib
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+Packages/
+.build/
+.swiftpm
+
+# CocoaPods (Pods/)
+Pods/
+
+# Carthage
+Carthage/
+Carthage/Build/
+
+# fastlane artifacts
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux trash
+.Trash-*
+
+# Vim swap files
+*.swp
+
+##Google Firebase Api
+**/GoogleService-Info.plist
