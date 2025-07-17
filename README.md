@@ -505,7 +505,10 @@ flowchart TD
 
 ## 📹 Gameplay Video
 
-_Coming soon!_
+
+
+https://github.com/user-attachments/assets/593a73ba-042a-460c-b792-09f14b72bbcb
+
 
 ---
 
