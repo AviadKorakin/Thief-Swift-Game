@@ -93,15 +93,15 @@ function divide(minX, minY, maxX, maxY):
 
 ```mermaid
 flowchart TD
-    Start[Start with full grid]
-    A[Divide with wall (horizontal/vertical)]
-    B[Add random holes in wall]
-    C[Recurse on each subgrid]
-    D[Base case: too small to divide]
+    Start["Start with full grid"]
+    A["Divide with wall (horizontal/vertical)"]
+    B["Add random holes in wall"]
+    C["Recurse on each subgrid"]
+    D["Base case: too small to divide"]
 
     Start --> A --> B --> C
-    C -->|If subgrid big| A
-    C -->|If subgrid small| D
+    C -- "If subgrid big" --> A
+    C -- "If subgrid small" --> D
 ```
 
 #### **In Your Code:**
@@ -299,16 +299,16 @@ Suppose the thief is at (1,1) and wants to move to (3,3) in a 5x5 grid:
 
 ```mermaid
 flowchart TD
-    S((1,1)):::start
-    A((2,1))
-    B((3,1))
-    C((3,2))
-    G((3,3)):::goal
+    S(("1,1")):::start
+    A(("2,1"))
+    B(("3,1"))
+    C(("3,2"))
+    G(("3,3")):::goal
 
-    S -- g=0,h=4 --> A
-    A -- g=1,h=3 --> B
-    B -- g=2,h=2 --> C
-    C -- g=3,h=1 --> G
+    S -- "g=0,h=4" --> A
+    A -- "g=1,h=3" --> B
+    B -- "g=2,h=2" --> C
+    C -- "g=3,h=1" --> G
 
     classDef start fill:#f9f,stroke:#333,stroke-width:2px;
     classDef goal fill:#9f9,stroke:#333,stroke-width:2px;
@@ -447,20 +447,20 @@ static func astarPath(
 
 ```mermaid
 flowchart TD
-    A[User taps on maze cell]
-    B[GameView triggers moveTo]
-    C[GameViewModel calculates path]
-    D[Background thread animates thief]
-    E[UI updates thief position]
-    F[Police AI checks detection]
-    G[Police state: Patrolling/Chasing/Returning]
-    H[Police moves]
-    I[UI updates police position]
-    J{Coin collected?}
-    K[Update score, check level]
-    L[Continue]
-    M{Collision with thief?}
-    N[Game Over]
+    A["User taps on maze cell"]
+    B["GameView triggers moveTo"]
+    C["GameViewModel calculates path"]
+    D["Background thread animates thief"]
+    E["UI updates thief position"]
+    F["Police AI checks detection"]
+    G["Police state: Patrolling/Chasing/Returning"]
+    H["Police moves"]
+    I["UI updates police position"]
+    J{"Coin collected?"}
+    K["Update score, check level"]
+    L["Continue"]
+    M{"Collision with thief?"}
+    N["Game Over"]
 
     A --> B
     B --> C
@@ -471,11 +471,11 @@ flowchart TD
     G --> H
     H --> I
     E --> J
-    J -- Yes --> K
-    J -- No --> L
+    J -- "Yes" --> K
+    J -- "No" --> L
     H --> M
-    M -- Yes --> N
-    M -- No --> L
+    M -- "Yes" --> N
+    M -- "No" --> L
 ```
 
 ---
