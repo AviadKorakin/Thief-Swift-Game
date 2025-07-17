@@ -1,17 +1,14 @@
-//
-//  EscapeThePoliceApp.swift
-//  EscapeThePolice
-//
-//  Created by Aviad on 10/07/2025.
-//
-
+// EscapeThePoliceApp.swift
 import SwiftUI
 
 @main
 struct EscapeThePoliceApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+  // Connect your AppDelegate for swizzling
+  @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+  var body: some Scene {
+    WindowGroup {
+        MainView()
     }
+  }
 }
