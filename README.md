@@ -62,7 +62,7 @@ Your maze generator uses two classic algorithms to create interesting, solvable 
 
 **Recursive division** is a method for generating mazes by repeatedly splitting the grid into smaller sections with walls, then adding openings (doors) to connect them. This creates a maze with long corridors and a “room-like” feel.
 
-#### **How It Works (in your code):**
+#### **How It Works:**
 
 - The function `carveByDivision` is called with the current bounds of a subgrid.
 - If the area is too small, it stops (base case).
@@ -104,8 +104,6 @@ flowchart TD
     C -- "If subgrid small" --> D
 ```
 
-#### **In Your Code:**
-
 - See `Maze.carveByDivision(minX:minY:maxX:maxY:grid:)`
 - This is why your mazes have long, straight corridors and “rooms.”
 
@@ -115,7 +113,7 @@ flowchart TD
 
 **Randomized DFS** is another maze generation technique, often called the “recursive backtracker.” It creates mazes with lots of twists and turns and a single unique path between any two points.
 
-#### **How It Works (in your code):**
+#### **How It Works:**
 
 - Start at a random cell, mark it as visited.
 - Randomly pick a direction (up, down, left, right).
@@ -134,8 +132,6 @@ function dfs(x, y):
             remove wall between (x, y) and (nx, ny)
             dfs(nx, ny)
 ```
-
-#### **In Your Code:**
 
 - See `Maze.carve(fromX:y:w:h:grid:visited:)`
 - This is used for initial path carving before recursive division, ensuring all areas are reachable.
